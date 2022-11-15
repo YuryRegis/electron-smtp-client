@@ -4,7 +4,7 @@ import { Text } from "@chakra-ui/react";
 function Footer() {
   return (
     <Text fontSize={"8"} mb="2">
-      Feito com ❤️ por Yury Regis e Nincolas
+      Feito com ❤️ por Nincolas e Yury Regis
     </Text>
   );
 }

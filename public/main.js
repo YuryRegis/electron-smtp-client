@@ -1,9 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 require("@electron/remote/main").initialize();
 
+const { getTransporterOptions } = require("../src/utils/transporterServices");
+
+global.authMail = null;
 const OS = require("os");
 const url = require("url");
 const path = require("path");
+const nodemailer = require("nodemailer");
 const isDev = require("electron-is-dev");
 
 function createWindow() {
@@ -54,14 +58,48 @@ app.on("activate", () => {
   }
 });
 
-ipcMain.on("login-smtp", (event, { email, password }) => {
+ipcMain.on("login-smtp", async (event, { email, password }) => {
   try {
-    //
-    event.sender.send("success-toast", {});
+    const options = getTransporterOptions(email);
+    global.authMail = nodemailer.createTransport({
+      ...options,
+      auth: {
+        user: email,
+        pass: password,
+      },
+    });
+
+    const message = {
+      title: "Login realizado com sucesso!",
+      message: "Agora você pode enviar emails.",
+    };
+    event.sender.send("success-toast", { ...message });
   } catch (error) {
-    //
-    const message = "Arquivo ou diretório inválido!";
+    const message = error?.message;
     event.sender.send("error-toast", { message });
+  }
+});
+
+ipcMain.on("send-mail", async (event, mailOptions) => {
+  try {
+    await global.authMail?.sendMail({ ...mailOptions }, function (error, info) {
+      if (error) {
+        const message = {
+          title: "Erro ao enviar email",
+          message: error?.message,
+        };
+        event.sender.send("error-toast", { ...message });
+        console.log(error);
+      } else {
+        const message = {
+          title: "Sucesso!",
+          message: `Email enviado para ${mailOptions.to}.`,
+        };
+        event.sender.send("success-toast", { ...message });
+      }
+    });
+  } catch (error) {
+    console.log(error);
   }
 });
 
