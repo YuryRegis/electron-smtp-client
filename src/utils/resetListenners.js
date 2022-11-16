@@ -1,6 +1,6 @@
 const { ipcRenderer } = window.require("electron");
 
-const listeners = ["success-toast", "error-toast"];
+const listeners = ["success-toast", "error-toast", "logout"];
 function resetAllListeners() {
   listeners.map((listener) => resetListener(listener));
 }

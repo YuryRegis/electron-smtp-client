@@ -15,18 +15,42 @@ import { UserContext, defaultState } from "../../store";
 import ResetAllListeners from "../../utils/resetListenners";
 const { ipcRenderer } = window.require("electron");
 
-function MainApplication({ setAuthorized }) {
+function MainApplication() {
+  const [body, setBody] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [subject, setSubject] = React.useState("");
   const { userState, setUserState } = React.useContext(UserContext);
   const { space, sizes, radii } = useTheme();
   const toast = useToast();
 
   function buttonHandler() {
-    ipcRenderer.send("send-mail", {
-      from: userState?.email,
-      to: "yury.kun.sherlockiano@gmail.com",
-      subject: "Message test 3",
-      text: "I hope this message gets delivered!",
-    });
+    if (email === "" || body === "" || subject === "") {
+      return toast({
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+        title: "Opa! Algo de errado não está certo.",
+        description: "Preencha todos os campos corretamente para continuar.",
+      });
+    }
+    try {
+      ipcRenderer.send("send-mail", {
+        from: userState?.email,
+        to: email,
+        subject: subject,
+        text: body,
+      });
+    } catch (error) {
+      return toast({
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+        title: "Opa! Algo de errado não está certo.",
+        description: error.message,
+      });
+    }
   }
 
   useEffect(() => {
@@ -40,8 +64,27 @@ function MainApplication({ setAuthorized }) {
         description: message,
         position: "bottom-left",
       });
+      setBody("");
+      setEmail("");
+      setSubject("");
     });
-  }, []);
+
+    ipcRenderer.on("error-toast", (event, { title, message }) => {
+      toast({
+        title: title,
+        duration: 5000,
+        isClosable: true,
+        status: "warning",
+        description: message,
+        position: "bottom-left",
+      });
+      return;
+    });
+
+    ipcRenderer.on("logout", (event, _) => {
+      return setUserState(defaultState);
+    });
+  }, [userState]);
 
   return (
     <Flex
@@ -53,20 +96,30 @@ function MainApplication({ setAuthorized }) {
     >
       <FormControl id="from">
         <FormLabel>Email</FormLabel>
-        <Input type="email" />
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </FormControl>
 
       <Box mt={space[3]}>
         <FormControl id="subject">
           <FormLabel>Assunto</FormLabel>
-          <Input />
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
         </FormControl>
       </Box>
 
       <Box mt={space[3]}>
         <FormControl id="body">
           <FormLabel>Mensagem</FormLabel>
-          <Textarea size="xs" minH={sizes[36]} borderRadius={radii.md} />
+          <Textarea
+            size="xs"
+            value={body}
+            minH={sizes[36]}
+            borderRadius={radii.md}
+            onChange={(e) => setBody(e.target.value)}
+          />
         </FormControl>
       </Box>
 
@@ -87,7 +140,6 @@ function MainApplication({ setAuthorized }) {
             type="submit"
             colorScheme="teal"
             onClick={buttonHandler}
-            // onSubmit={buttonHandler}
           >
             Enviar
           </Button>

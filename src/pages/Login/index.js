@@ -17,16 +17,28 @@ import ResetAllListeners from "../../utils/resetListenners";
 const { ipcRenderer } = window.require("electron");
 
 function Login() {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const { userState, setUserState } = React.useContext(UserContext);
   const { sizes, space } = useTheme();
   const toast = useToast();
 
   function buttonHandler() {
-    setUserState({ ...userState, email: "" });
+    if (email === "" || password === "") {
+      return toast({
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+        title: "Opa! Algo de errado não está certo.",
+        description: "Preencha todos os campos corretamente para continuar.",
+      });
+    }
+    setUserState({ isAuthorized: false, email: email });
 
     ipcRenderer.send("login-smtp", {
-      email: "",
-      password: "",
+      email: email,
+      password: password,
     });
   }
 
@@ -58,7 +70,7 @@ function Login() {
       });
       return;
     });
-  }, []);
+  }, [userState]);
 
   return (
     <Flex
@@ -70,25 +82,27 @@ function Login() {
     >
       <FormControl id="email">
         <FormLabel>Email</FormLabel>
-        <Input type="email" />
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
         <FormHelperText>
           Nós nunca iremos compartilhar seus dados.
         </FormHelperText>
       </FormControl>
 
-      <FormControl id="password">
+      <FormControl id="pswd">
         <FormLabel>Senha</FormLabel>
-        <Input type="password" />
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </FormControl>
 
       <Box mt={space[8]}>
-        <Button
-          type="submit"
-          minW={sizes[36]}
-          colorScheme="teal"
-          onClick={buttonHandler}
-          onSubmit={buttonHandler}
-        >
+        <Button minW={sizes[36]} colorScheme="teal" onClick={buttonHandler}>
           Entrar
         </Button>
       </Box>

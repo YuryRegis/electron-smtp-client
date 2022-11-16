@@ -86,9 +86,16 @@ ipcMain.on("send-mail", async (event, mailOptions) => {
       if (error) {
         const message = {
           title: "Erro ao enviar email",
-          message: error?.message,
+          message:
+            error?.command === "AUTH LOGIN"
+              ? "Falha na autenticação (AUTH LOGIN)"
+              : error.command,
         };
         event.sender.send("error-toast", { ...message });
+
+        if (error?.command === "AUTH LOGIN") {
+          event.sender.send("logout", {});
+        }
         console.log(error);
       } else {
         const message = {
@@ -99,6 +106,11 @@ ipcMain.on("send-mail", async (event, mailOptions) => {
       }
     });
   } catch (error) {
+    const message = {
+      title: "Erro ao enviar email",
+      message: error?.status,
+    };
+    event.sender.send("error-toast", { ...message });
     console.log(error);
   }
 });
